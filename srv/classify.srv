@@ -1,0 +1,6 @@
+geometry_msgs/Vector3 p_dir
+geometry_msgs/Vector3 h_dir
+geometry_msgs/Wrench wrench
+std_msgs/Float64 tdist
+---
+string classification

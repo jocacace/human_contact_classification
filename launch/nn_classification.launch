@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+
+
+<launch>
+
+   	<node pkg="human_contact_classification" name="nn_classification" type="nn_classification" output="screen">
+		<param name="training_set" value="train_dirforcedist" type="string" />
+		<param name="testing_set" value="test_dirforcedist" type="string" />
+		
+		<!--
+		<param name="training_set" value="train_dirforce" type="string" />
+		<param name="testing_set" value="test_dirforce" type="string" />		
+		-->
+		<param name="ts_type" value="ts_kuka" type="string" />
+		<param name="dimension" value="3" type="int" />
+		<param name="classes" value="4" type="int" />
+		<param name="hlayer" value="25" type="int" />
+		<param name="rate" value="100" type="int" />
+		<param name="gen_tt_files" value="false" type="bool" />
+		<param name="test_nn" value="true" type="bool" />
+		<param name="seq_samples" value="350" type="int" />
+		<param name="enable_service" value="true" type="bool" />
+	</node>
+</launch>
