@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 #include "TooN/TooN.h"
-#include "robohelper/robohelper.hpp"
+#include "helper/helper.h"
 #include "sensor_msgs/JointState.h"
 #include "boost/thread.hpp"
 #include "geometry_msgs/Wrench.h"
@@ -23,10 +23,9 @@
 #include <ros/package.h>
 #include "std_msgs/String.h" 
 #include "human_contact_classification/classify.h"
-#include <iostream>
 
 #include "cv.h"       // opencv general include file
-#include <opencv2/ml.hpp>     // opencv machine learning include file
+#include "ml.h"     // opencv machine learning include file
 #include <stdio.h>
 
 using namespace std;
@@ -100,8 +99,8 @@ class NN_classification {
 
 		bool _start_point_classification;
 
-		
-		cv::Ptr<cv::ml::ANN_MLP> _nnetwork;
+		CvANN_MLP* _nnetwork;
+
 		vector < vector< int > > _confusion_Matrix;
 		vector < int > _sample_in_class;
 

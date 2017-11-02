@@ -57,9 +57,9 @@ string get_c_name(int c) {
     return "C_TYPE_CONTACT_CONCORDE";
   if( c == 2 )
     return "C_TYPE_CONTACT_OPPOSITE";
-  else if( c == 3 )
+  else if( c == 3 ) 
     return "C_TYPE_CONTACT_DEVIATION_C";
-  else if( c == 4 )
+  else if( c == 4 ) 
     return "C_TYPE_CONTACT_DEVIATION_O";
   */
   return "";
@@ -68,7 +68,7 @@ string get_c_name(int c) {
 
 NN_classification::NN_classification() {
 
-
+  
   string train_file;
   string test_file;
   load_param(_ts_type, "ts_mini45", "ts_type");
@@ -96,22 +96,22 @@ NN_classification::NN_classification() {
   cout << "Test Set filename: " << _test_filename << endl;
 
   _eef_p_start_direction_sub  = _nh.subscribe( "/iiwa/eef_p_start_direction", 0, &NN_classification::pdir_start_cb, this );
-
+  
   //----Service is not working
   if(!_enable_service) {
     //Direzione pianificata
     /*
-    _eef_p_direction_sub        = _nh.subscribe( "/iiwa/eef_p_direction", 0, &NN_classification::pdir_cb, this );
-    _eef_h_direction_sub        = _nh.subscribe( "/iiwa/eef_h_direction", 0, &NN_classification::hdir_cb, this );
-    _force_sub                  = _nh.subscribe( "/fts_data", 0, &NN_classification::force_cb, this );
+    _eef_p_direction_sub        = _nh.subscribe( "/iiwa/eef_p_direction", 0, &NN_classification::pdir_cb, this );  
+    _eef_h_direction_sub        = _nh.subscribe( "/iiwa/eef_h_direction", 0, &NN_classification::hdir_cb, this );  
+    _force_sub                  = _nh.subscribe( "/fts_data", 0, &NN_classification::force_cb, this );  
     _dist_from_traj_sub         = _nh.subscribe( "/iiwa/dist_from_traj", 0, &NN_classification::dist_cb, this);
     */
-    _eef_p_direction_sub        = _nh.subscribe( "/pdir", 0, &NN_classification::pdir_cb, this );
-    _eef_h_direction_sub        = _nh.subscribe( "/hdir", 0, &NN_classification::hdir_cb, this );
-    _force_sub                  = _nh.subscribe( "/human_force", 0, &NN_classification::force_cb, this );
+    _eef_p_direction_sub        = _nh.subscribe( "/pdir", 0, &NN_classification::pdir_cb, this );  
+    _eef_h_direction_sub        = _nh.subscribe( "/hdir", 0, &NN_classification::hdir_cb, this );  
+    _force_sub                  = _nh.subscribe( "/human_force", 0, &NN_classification::force_cb, this );  
     _dist_from_traj_sub         = _nh.subscribe( "/tdist", 0, &NN_classification::dist_cb, this);
-    _class_pub                  = _nh.advertise< std_msgs::String > ("/nn_classification/class", 0);
-
+    _class_pub                  = _nh.advertise< std_msgs::String > ("/nn_classification/class", 0);  
+    
   }
   else {
     cout << "ADVERTISE SERVICE!" << endl;
@@ -124,7 +124,7 @@ NN_classification::NN_classification() {
   _pdir_start = Zeros;
   _start_point_classification = false;
 
-
+  
   _confusion_Matrix.resize( _classes );
   for(int i=0; i<_classes; i++) {
     _confusion_Matrix[i].resize( _classes );
@@ -134,13 +134,13 @@ NN_classification::NN_classification() {
     for(int j=0; j<_classes; j++) {
       _confusion_Matrix[i][j] = 0;
     }
-  }
+  }  
 
   _sample_in_class.resize( _classes );
 
 }
 
-NN_classification::~NN_classification() {
+NN_classification::~NN_classification() { 
   cvReleaseMat( &_training_data );
   cvReleaseMat( &_training_classifications );
   cvReleaseMat( &_testing_data );
@@ -165,7 +165,7 @@ void NN_classification::pdir_cb( geometry_msgs::Vector3 pdir ) {
 }
 
 void NN_classification::hdir_cb( geometry_msgs::Vector3 hdir ) {
-  _hdir = makeVector( hdir.x, hdir.y, hdir.z );
+  _hdir = makeVector( hdir.x, hdir.y, hdir.z ); 
 }
 
 void NN_classification::dist_cb( std_msgs::Float64 dist_ ) {
@@ -174,7 +174,7 @@ void NN_classification::dist_cb( std_msgs::Float64 dist_ ) {
 
 
 bool read_data_from_csv(const char* filename, CvMat* data, CvMat* classes,
-
+  
   int n_samples, int attributes_per_sample ) {
 
   int classlabel; // the class label
@@ -185,19 +185,19 @@ bool read_data_from_csv(const char* filename, CvMat* data, CvMat* classes,
     return false;
   }
 
-  for(int line = 0; line < n_samples; line++) {
+  for(int line = 0; line < n_samples; line++) {    
 
     for(int attribute = 0; attribute < (attributes_per_sample + 1); attribute++) {
-      if (attribute < attributes_per_sample) {
+      if (attribute < attributes_per_sample) {    
         //printf("%f\n", f );
         fscanf(f, "%f,", &(CV_MAT_ELEM  (*data, float, line, attribute)));
         //cout << "ELEM: " << (CV_MAT_ELEM  (*data, float, line, attribute)) << " ";
       }
-      else if (attribute == attributes_per_sample) {
+      else if (attribute == attributes_per_sample) {          
         fscanf(f, "%i,", &classlabel);
         CV_MAT_ELEM(*classes, float, line, classlabel) = 1.0; // TODO: Change classlabel with an id (now is an index, must start from 0!)
         //cout << "[" << classlabel << "]" << endl;
-      }
+      }      
     }
     //cout << endl;
   }
@@ -212,45 +212,46 @@ bool NN_classification::train() {
   _training_data = cvCreateMat( _train_sample_num, _dimension, CV_32FC1);
   _training_classifications = cvCreateMat(_train_sample_num, _classes, CV_32FC1);
   cvZero(_training_classifications);
-
-  if( !read_data_from_csv(robohelper::string2char( _train_filename ),
+  
+  if( !read_data_from_csv(helper::string2char( _train_filename ), 
     _training_data, _training_classifications, _train_sample_num, _dimension ))
     return false;
 
-
+  
   _testing_data = cvCreateMat(_test_sample_num, _dimension, CV_32FC1);
   _testing_classifications = cvCreateMat(_test_sample_num, _classes, CV_32FC1);
   cvZero(_testing_classifications);
 
-  if( !read_data_from_csv(robohelper::string2char( _test_filename ),
+  if( !read_data_from_csv(helper::string2char( _test_filename ), 
     _testing_data, _testing_classifications, _test_sample_num, _dimension ))
     return false;
-
+  
   _classificationResult = cvCreateMat(1, _classes, CV_32FC1);
-
-
-  int layers_d[] = { _dimension, _hlayer,  _classes};
+  
+  
+  int layers_d[] = { _dimension, _hlayer,  _classes};   
   CvMat* layers = cvCreateMatHeader(1,3,CV_32SC1);
   cvInitMatHeader(layers, 1,3,CV_32SC1, layers_d);
 
   // create the network using a sigmoid function with alpha and beta
   // parameters 0.6 and 1 specified respectively (refer to manual)
-  //_nnetwork = new CvANN_MLP;
-	_nnetwork = cv::ml::ANN_MLP::create();
+  _nnetwork = new CvANN_MLP;
+  _nnetwork->create(layers, CvANN_MLP::SIGMOID_SYM, 0.6, 1);
 
+  CvANN_MLP_TrainParams params = CvANN_MLP_TrainParams(
+          // terminate the training after either 1000
+          // iterations or a very small change in the
+          // network wieghts below the specified value
+          cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, 0.000001),
+          // use backpropogation for training
+          CvANN_MLP_TrainParams::BACKPROP,
+          // co-efficents for backpropogation training
+          // (refer to manual)
+          0.1,
+          0.1);
+  
+  int iterations = _nnetwork->train(_training_data, _training_classifications, NULL, NULL, params);
 
-
-  std::vector<int> layerSizes = { _dimension, _hlayer,  _classes };
-  _nnetwork->setLayerSizes( layerSizes );
-  _nnetwork->setActivationFunction(cv::ml::ANN_MLP::SIGMOID_SYM);
-  //_nnetwork->train(trainSamples, cv::ml::ROW_SAMPLE, trainResponses);
-  cv::Mat training = cv::cvarrToMat(_training_data);
-  cv::Mat testing = cv::cvarrToMat(_training_classifications);
-
-  cout << "Size: " << training.rows << " " << training.cols << endl;
-  _nnetwork->train(training, cv::ml::ROW_SAMPLE, testing );
-  //int iterations = _nnetwork->train(_training_data, _training_classifications, NULL, NULL, params);
-  //_nnetwork->create(layers, CvANN_MLP::SIGMOID_SYM, 0.6, 1);
   return true;
 }
 
@@ -271,13 +272,13 @@ void NN_classification::nn_testing() {
 
   for( int i=0; i<_classes; i++ )
     false_positives[i] = 0;
-
+  
   for (int tsample = 0; tsample < _test_sample_num; tsample++) {
-
+      
     // extract a row from the testing matrix
     cvGetRow(_testing_data, &test_sample, tsample );
 
-    //_nnetwork->predict(&test_sample, _classificationResult);
+    _nnetwork->predict(&test_sample, _classificationResult);
 
     // The NN gives out a vector of probabilities for each class
     // We take the class with the highest "probability"
@@ -287,11 +288,11 @@ void NN_classification::nn_testing() {
     cvMinMaxLoc(_classificationResult, 0, 0, 0, &max_loc, 0 );
     //cout << "TEST SAMPLE: " << CV_MAT_ELEM(test_sample, float, 0, 3) << endl;
     /*
-    cout << CV_MAT_ELEM(test_sample, float, 0, 0) << " " <<
-    CV_MAT_ELEM(test_sample, float, 0, 1) <<  " " <<
+    cout << CV_MAT_ELEM(test_sample, float, 0, 0) << " " <<     
+    CV_MAT_ELEM(test_sample, float, 0, 1) <<  " " << 
     CV_MAT_ELEM(test_sample, float, 0, 2) <<  " " << /*
-    CV_MAT_ELEM(test_sample, float, 0, 3) <<  " " <<
-    CV_MAT_ELEM(test_sample, float, 0, 4) <<  " " <<
+    CV_MAT_ELEM(test_sample, float, 0, 3) <<  " " << 
+    CV_MAT_ELEM(test_sample, float, 0, 4) <<  " " << 
     CV_MAT_ELEM(test_sample, float, 0, 5) <<  " " << endl; */
 
     /*
@@ -300,7 +301,7 @@ void NN_classification::nn_testing() {
         if( CV_MAT_ELEM(*_testing_classifications, float, tsample, i) == 1 )
           rc2 = i;
       }
-
+      
     printf("Testing Sample %i [%i] -> class result (digit %d)\n", tsample, rc2, max_loc.x);
     */
     /**/
@@ -339,8 +340,8 @@ void NN_classification::nn_testing() {
     }
   }
 
-  printf( "\nResults on the testing database: \n"
-          "\tCorrect classification: %d (%g%%)\n"
+  printf( "\nResults on the testing database: \n" 
+          "\tCorrect classification: %d (%g%%)\n" 
           "\tWrong classifications: %d (%g%%)\n",
           correct_class, (double) correct_class*100/_test_sample_num,
           wrong_class, (double) wrong_class*100/_test_sample_num);
@@ -375,14 +376,14 @@ void NN_classification::gen_tt_files() {
 
   string line;
   string contact;
-
+  
   cout << "Insert data type: " << endl;
   cout << "1 - TRAIN" << endl;
   cout << "2 - TEST" << endl;
-  getline(cin, line);
+  getline(cin, line); 
 
   string prefix = "";
-  if( line == "1")
+  if( line == "1") 
     prefix = "train_";
   else if( line == "2" )
     prefix = "test_";
@@ -393,7 +394,7 @@ void NN_classification::gen_tt_files() {
   cout << "3 - contact_opposite" << endl;
   cout << "4 - contact_deviation_compliant" << endl;
   cout << "5 - contact_deviation_opposite" << endl;
-
+  
   getline(cin, line);
   contact = line;
 
@@ -407,19 +408,19 @@ void NN_classification::gen_tt_files() {
     contact = "C_TYPE_CONTACT_DEVIATION_C";
   else if ( line == "5" )
     contact = "C_TYPE_CONTACT_DEVIATION_O";
+  
+  dirforcedist_file_name = _dir_path + prefix + "dirforcedist_" + contact;  
 
-  dirforcedist_file_name = _dir_path + prefix + "dirforcedist_" + contact;
-
-  _dirforcedist_file.open( robohelper::string2char( dirforcedist_file_name ), std::ofstream::out | std::ofstream::app);
+  _dirforcedist_file.open( helper::string2char( dirforcedist_file_name ), std::ofstream::out | std::ofstream::app);
   /*
-  _label_file.open( robohelper::string2char( _label_filename ), std::ofstream::out | std::ofstream::app);
+  _label_file.open( helper::string2char( _label_filename ), std::ofstream::out | std::ofstream::app);
   cout << "Insert LABEL for this contact type: " << endl;
   cout << "1 - C_TYPE_NO_CONTACT" << endl;
   cout << "2 - C_TYPE_CONTACT_CONCORDE" << endl;
   cout << "3 - C_TYPE_CONTACT_OPPOSITE" << endl;
   cout << "4 - C_TYPE_CONTACT_DEVIATION_C" << endl;
   cout << "5 - C_TYPE_CONTACT_DEVIATION_O" << endl;
-  getline(cin, line);
+  getline(cin, line); 
 
   if( line == "1" )
     _label_file << contact << " " << "C_TYPE_NO_CONTACT" << endl;
@@ -435,13 +436,13 @@ void NN_classification::gen_tt_files() {
 
   float angle;
   Vector<3> axis;
-
+  
   //exit(1);
 
   Vector<3> nforce;
   while( ros::ok() ) {
 
-    if( norm( _pdir) && norm( _hdir ) > 0.0 && norm(_force) > 0.0 ) {
+    if( norm( _pdir) && norm( _hdir ) > 0.0 && norm(_force) > 0.0 ) { 
       angle = atan2( norm( _pdir ^ _hdir ), _pdir * _hdir);
       nforce = _force;
       nforce = nforce / norm(nforce);
@@ -457,7 +458,7 @@ void NN_classification::gen_tt_files() {
 
 
 string NN_classification::classify(float angle, float nforce, float _dist) {
-
+  
   CvMat *c_sample = cvCreateMat(1, _dimension, CV_32FC1);;
   CvPoint max_loc = {0,0};
 
@@ -465,17 +466,17 @@ string NN_classification::classify(float angle, float nforce, float _dist) {
   CV_MAT_ELEM(*c_sample, float, 0, 1) = angle;
   CV_MAT_ELEM(*c_sample, float, 0, 2) = _dist;
 
-  // _nnetwork->predict( c_sample, _classificationResult);
-  cvMinMaxLoc(_classificationResult, 0, 0, 0, &max_loc, 0 );
+  _nnetwork->predict( c_sample, _classificationResult);
+  cvMinMaxLoc(_classificationResult, 0, 0, 0, &max_loc, 0 );      
 
-  return _label_maps.find((int)max_loc.x)->second;
+  return _label_maps.find((int)max_loc.x)->second; 
 }
 
 
 void NN_classification::classification() {
 
   ros::Rate r(_rate );
-
+  
   float angle;
   Vector<3> nforce;
   CvMat *c_sample = cvCreateMat(1, _dimension, CV_32FC1);;
@@ -497,15 +498,15 @@ void NN_classification::classification() {
 
   while( ros::ok() ) {
 
-    if( norm( _pdir) > 0.0 && norm( _hdir ) > 0.0 && norm(_force) > 0.0 ) {
-
-      angle = atan2( norm( _pdir ^ _hdir ), _pdir * _hdir);
+    if( norm( _pdir) > 0.0 && norm( _hdir ) > 0.0 && norm(_force) > 0.0 ) { 
+      
+      angle = atan2( norm( _pdir ^ _hdir ), _pdir * _hdir);    
       c = classify( angle, norm( _force ), _dist );
-
+      
       if ( !first ) {
         if ( p_c == c ) {
           c_seq++;
-          c_seq_zero = 0;
+          c_seq_zero = 0;          
         }
         else {
           if( c_seq_zero++ > 5 )
@@ -515,28 +516,28 @@ void NN_classification::classification() {
       else
         c_data.data = get_c_name( -1 );
 
-      if ( c_seq > _seq_samples) {
+      if ( c_seq > _seq_samples) {    
         c_data.data = c;
       }
       else {
-        c_data.data = "C_TYPE_NO_CONTACT";
+        c_data.data = "C_TYPE_NO_CONTACT";      
       }
-
+      
       c_data.data = c;
-      cvMinMaxLoc(_classificationResult, 0, 0, 0, &max_loc, 0 );
-
+      cvMinMaxLoc(_classificationResult, 0, 0, 0, &max_loc, 0 );      
+      
       first = false;
     }
-    else {
+    else {        
       c_data.data = "C_TYPE_NO_CONTACT";
-      angle = 0;
+      angle = 0;        
     }
 
     p_c = c;
-
+  
       angle_d.data = angle;
     _angle_pub.publish( angle_d  );
-    _class_pub.publish( c_data );
+    _class_pub.publish( c_data );  
 
     r.sleep();
   }
@@ -551,10 +552,10 @@ bool NN_classification::srv_classification(human_contact_classification::classif
   CvPoint max_loc = {0,0};
   CvMat *c_sample = cvCreateMat(1, _dimension, CV_32FC1);;
   string c = "";
-  std_msgs::String c_data;
+  std_msgs::String c_data;  
   std_msgs::Float64 angle_d;
 
-  //---Set data
+  //---Set data  
   _pdir   = makeVector(req.p_dir.x, req.p_dir.y, req.p_dir.z);
   _hdir   = makeVector(req.h_dir.x, req.h_dir.y, req.h_dir.z);
   _force  = makeVector( req.wrench.force.x, req.wrench.force.y, req.wrench.force.z);
@@ -562,11 +563,11 @@ bool NN_classification::srv_classification(human_contact_classification::classif
   //---
 
   //cout << norm( _pdir) << " " <<  norm( _hdir ) << " " <<  norm(_force) << endl;
-  if( norm( _pdir) > 0.0 && norm( _hdir ) > 0.0 && norm(_force) > 3.0 ) {
-
-    angle = atan2( norm( _pdir ^ _hdir ), _pdir * _hdir);
+  if( norm( _pdir) > 0.0 && norm( _hdir ) > 0.0 && norm(_force) > 3.0 ) { 
+      
+    angle = atan2( norm( _pdir ^ _hdir ), _pdir * _hdir);    
     c = classify( angle, norm( _force ), _dist );
-    cvMinMaxLoc(_classificationResult, 0, 0, 0, &max_loc, 0 );
+    cvMinMaxLoc(_classificationResult, 0, 0, 0, &max_loc, 0 );        
     //first = false;
   }
   else {
@@ -578,19 +579,19 @@ bool NN_classification::srv_classification(human_contact_classification::classif
   //p_c = c;
   res.classification = c;
 
-  //else
+  //else 
   //  c_data.data = "C_TYPE_NO_CONTACT";
   angle_d.data = angle;
   _angle_pub.publish( angle_d  );
-  //_class_pub.publish( c_data );
- // _start_class_pub.publish( c_data_start );
+  //_class_pub.publish( c_data );  
+ // _start_class_pub.publish( c_data_start );  
 
   return true;
 }
 
 
 void NN_classification::run() {
-
+  
   if ( _gen_tt_files)
     boost::thread gen_tt_files_t( &NN_classification::gen_tt_files, this );
   else {
@@ -605,47 +606,47 @@ void NN_classification::run() {
     classes.push_back("C_TYPE_CONTACT_DEVIATION_C");
     _label_maps.insert ( std::pair<int,string>(2, "C_TYPE_CONTACT_DEVIATION_C") );
     classes.push_back("C_TYPE_CONTACT_DEVIATION_O");
-    _label_maps.insert ( std::pair<int,string>(3, "C_TYPE_CONTACT_DEVIATION_O") );
+    _label_maps.insert ( std::pair<int,string>(3, "C_TYPE_CONTACT_DEVIATION_O") );  
     //---
 
 
-    std::ofstream train_file_to_write ( robohelper::string2char( _train_filename ) );
+    std::ofstream train_file_to_write ( helper::string2char( _train_filename ) );
     for( int i=0; i<classes.size(); i++ ) {
-      string dirforcedist_file_name = _dir_path + "train_" + "dirforcedist_" + classes[i];
+      string dirforcedist_file_name = _dir_path + "train_" + "dirforcedist_" + classes[i];  
       ifstream datafile;
-      datafile.open( robohelper::string2char( dirforcedist_file_name ));
+      datafile.open( helper::string2char( dirforcedist_file_name ));
       while (std::getline(datafile, line)) {
         train_file_to_write <<  line << " " << i << endl;
       }
     }
-
-    std::ofstream test_file_to_write ( robohelper::string2char( _test_filename ) );
+  
+    std::ofstream test_file_to_write ( helper::string2char( _test_filename ) );
     for( int i=0; i<classes.size(); i++ ) {
-      string dirforcedist_file_name = _dir_path + "test_" + "dirforcedist_" + classes[i];
+      string dirforcedist_file_name = _dir_path + "test_" + "dirforcedist_" + classes[i];  
       ifstream datafile;
-      datafile.open( robohelper::string2char( dirforcedist_file_name ));
+      datafile.open( helper::string2char( dirforcedist_file_name ));
       while (std::getline(datafile, line)) {
         test_file_to_write << line << " " << i << endl;
       }
     }
 
     _train_sample_num = _test_sample_num = 0;
-
-    std::ifstream train_file ( robohelper::string2char( _train_filename ) );
+      
+    std::ifstream train_file ( helper::string2char( _train_filename ) );
     while (std::getline(train_file, line))
       ++_train_sample_num;
     std::cout << "Number of lines in training file: " << _train_sample_num << endl;
 
     cout << "pre testfile open" << endl;
-    std::ifstream test_file ( robohelper::string2char( _test_filename ) );
+    std::ifstream test_file ( helper::string2char( _test_filename ) );
     while (std::getline(test_file, line))
       ++_test_sample_num;
     std::cout << "Number of lines in testing file: " << _test_sample_num << endl;
 
     cout << "Start training..." << endl;
     bool train_ok = train();
-    if( train_ok )
-      cout << "...NN Trained!" << endl << endl;
+    if( train_ok ) 
+      cout << "...NN Trained!" << endl << endl; 
 
 
     cout << "Start testing..." << endl;
@@ -669,3 +670,4 @@ int main( int argc, char** argv ) {
 
   return 0;
 }
+
